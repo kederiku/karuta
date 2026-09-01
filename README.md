@@ -36,7 +36,7 @@ collectionner (TCG) et les produits scellés associés.
 ## Démarrage
 
 Le workspace pnpm est en place : `pnpm install` à la racine résout les deux
-applications et les paquets partagés (Node 20, pnpm 9). Le reste de l'outillage
+applications et les paquets partagés (Node 24, pnpm 11). Le reste de l'outillage
 et le point d'entrée unique (`make dev`) arrivent avec KAR-5 et KAR-7.
 
 ## Configuration
