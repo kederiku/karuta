@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+dist/
+coverage/
+.turbo/
+
+# Docker — volumes et données montés localement depuis le dépôt
+docker/**/data/
+.docker/
+
+# Environnement
+.env
+.env.*
+!.env.example
+
+# IDE et système
+.DS_Store
+.idea/
+.vscode/*
+# Ces deux fichiers sont versionnés : ils imposent le formatage à la sauvegarde
+# et les extensions attendues (doc 10 §9).
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Le client d'API généré par Orval est volontairement versionné : la CI le
+# régénère et échoue sur toute divergence (doc 05 §9). Ne pas ignorer
+# frontend/src/generated/ ni backoffice/src/generated/.
