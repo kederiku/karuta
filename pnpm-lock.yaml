@@ -1,0 +1,27 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  backoffice: {}
+
+  frontend:
+    dependencies:
+      '@karuta/types':
+        specifier: workspace:*
+        version: link:../packages/types
+
+  packages/config-eslint: {}
+
+  packages/config-tailwind: {}
+
+  packages/config-typescript: {}
+
+  packages/types: {}
+
+  packages/ui: {}
