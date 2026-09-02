@@ -37,7 +37,7 @@ select = [
     "B",            # bugbear
     "C4",           # comprehensions
     "SIM",          # simplify
-    "TCH",          # type-checking imports
+    "TC",           # type-checking imports
     "RUF",          # ruff
     "ASYNC",        # pièges async
     "S",            # bandit (sécurité)

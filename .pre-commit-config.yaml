@@ -4,7 +4,7 @@ repos:
     # que le projet signalerait des erreurs que la CI ne verrait pas.
     rev: v0.16.5
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
       - id: ruff-format
 
