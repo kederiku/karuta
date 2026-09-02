@@ -16,22 +16,28 @@ collectionner (TCG) et les produits scellés associés.
 
 ## Organisation du dépôt
 
-| Chemin              | Contenu                                                                                 |
-| :------------------ | :-------------------------------------------------------------------------------------- |
-| `backend/api/`      | Service FastAPI (domaine, application, infrastructure, interfaces, workers).            |
-| `backend/scraping/` | Projet Scrapy : spiders, pipelines, extracteurs.                                        |
-| `frontend/`         | Application publique Next.js.                                                           |
-| `backoffice/`       | Application d'administration Next.js.                                                   |
-| `packages/`         | Paquets partagés entre les deux applications : UI, configurations, types.               |
-| `docker/`           | Dockerfiles et fichiers Docker Compose.                                                 |
-| `docs/`             | Décisions d'architecture (`docs/adr/`) et procédures d'exploitation (`docs/runbooks/`). |
-| `scripts/`          | Scripts transverses (seed, génération du client d'API, partitions).                     |
+| Chemin              | Contenu                                                                      |
+| :------------------ | :--------------------------------------------------------------------------- |
+| `backend/api/`      | Service FastAPI (domaine, application, infrastructure, interfaces, workers). |
+| `backend/scraping/` | Projet Scrapy : spiders, pipelines, extracteurs.                             |
+| `frontend/`         | Application publique Next.js.                                                |
+| `backoffice/`       | Application d'administration Next.js.                                        |
+| `packages/`         | Paquets partagés entre les deux applications : UI, configurations, types.    |
+| `docker/`           | Dockerfiles et fichiers Docker Compose.                                      |
+| `docs/`             | Procédures d'exploitation (`docs/runbooks/`).                                |
+| `scripts/`          | Scripts transverses (seed, génération du client d'API, partitions).          |
 
 ## Documentation
 
-- Spécifications produit et techniques : dossier Drive privé « Karuta » (accès
-  sur demande).
-- Décisions d'architecture : [`docs/adr/`](docs/adr/).
+L'espace Notion « Karuta » est la source de vérité du projet, en lecture comme en
+écriture (ADR-0026). On y trouve les spécifications produit et techniques
+(documents 00 à 20), les tickets `KAR-XX` de la base « Backlog Karuta » et les
+décisions d'architecture, dans le dossier « ADR » (ADR-0027). Accès sur demande.
+
+GitHub n'héberge que le code : dépôt, branches, pull requests et GitHub Actions.
+
+Le dépôt garde sa documentation technique propre : les procédures d'exploitation
+dans [`docs/runbooks/`](docs/runbooks/) et un README par service.
 
 ## Démarrage
 
