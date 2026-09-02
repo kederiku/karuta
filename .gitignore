@@ -5,6 +5,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+# Produits par pytest-cov : la mesure locale et le rapport que la CI génère.
+.coverage
+coverage.xml
 
 # Node
 node_modules/

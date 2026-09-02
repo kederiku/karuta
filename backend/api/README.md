@@ -91,6 +91,25 @@ uv run --directory backend/api pre-commit run --all-files
 Le détour par `uv run --directory` est nécessaire : `pre-commit` est installé dans
 l'environnement de ce service, alors que sa configuration vit à la racine.
 
+## Tests
+
+Pytest, avec `httpx` pour le client de test de FastAPI. Depuis ce dossier :
+
+```bash
+uv run pytest
+```
+
+Le seuil de couverture global du backend, 75 % (doc 10 §4), n'est pas dans
+`pyproject.toml` : il est porté par la ligne de commande, celle de la cible `make test-api`
+et celle de la CI. Pour rejouer exactement ce que vérifie la CI, depuis la racine du dépôt :
+
+```bash
+make test-api
+```
+
+Les tests vivent dans `tests/`, répartis en `unit/`, `integration/`, `e2e/` et `factories/`
+(doc 10 §4) ; les fixtures partagées sont dans `tests/conftest.py`.
+
 ## Organisation
 
 Architecture hexagonale : les dépendances ne pointent jamais vers l'extérieur.
