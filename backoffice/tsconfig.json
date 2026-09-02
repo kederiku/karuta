@@ -1,0 +1,4 @@
+{
+  "extends": "@karuta/config-typescript/base.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}

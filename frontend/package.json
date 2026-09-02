@@ -4,5 +4,8 @@
   "private": true,
   "dependencies": {
     "@karuta/types": "workspace:*"
+  },
+  "devDependencies": {
+    "@karuta/config-typescript": "workspace:*"
   }
 }

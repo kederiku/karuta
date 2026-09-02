@@ -12,5 +12,43 @@
       "source.fixAll.ruff": "explicit",
       "source.organizeImports.ruff": "explicit"
     }
+  },
+
+  // La configuration ESLint est unique et vit à la racine (ADR-0001) : le mode auto
+  // fait remonter l'extension jusqu'à elle depuis n'importe quel fichier ouvert.
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+  // Sans cette option, Prettier reformaterait aussi les dossiers exclus par
+  // .prettierignore dès qu'un fichier y est ouvert.
+  "prettier.requireConfig": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" }
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" }
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": "explicit" }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
   }
 }

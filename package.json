@@ -7,10 +7,18 @@
     "node": ">=24"
   },
   "scripts": {
-    "lint": "pnpm -r --if-present run lint",
-    "format": "pnpm -r --if-present run format",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build"
+  },
+  "devDependencies": {
+    "@karuta/config-eslint": "workspace:*",
+    "eslint": "9.39.5",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3"
   }
 }
