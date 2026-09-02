@@ -55,7 +55,8 @@ PostgreSQL n'exécute que sur une grappe vide.
 pgAdmin est disponible sur `http://localhost:5050` en ajoutant `--profile tools`,
 avec `dev@karuta.example.com` / `admin`.
 
-Le point d'entrée unique `make dev` arrive avec KAR-7.
+Depuis la racine du dépôt, `make dev` fait la même chose en une commande, et `make down`
+arrête la stack. La liste des cibles est dans le README racine.
 
 ## Qualité du code
 

@@ -41,11 +41,79 @@ dans [`docs/runbooks/`](docs/runbooks/) et un README par service.
 
 ## Démarrage
 
-Le workspace pnpm est en place : `pnpm install` à la racine résout les deux
-applications et les paquets partagés (Node 24, pnpm 11). Le reste de l'outillage
-et le point d'entrée unique (`make dev`) arrivent avec KAR-5 et KAR-7.
+### Prérequis
+
+- **Docker** et **Docker Compose** — toute la stack de développement tourne en
+  conteneurs.
+- **Node 24** et **pnpm 11**. `pnpm` ne s'installe pas à la main : `corepack enable`
+  suffit, corepack résolvant la version depuis le champ `packageManager` du
+  `package.json` racine, qui en est la source de vérité.
+- **Python 3.12** et **uv** — `uv` installe lui-même l'interpréteur. Les outils de
+  qualité du backend s'exécutent sur le poste, hors conteneur.
+- **make** — le point d'entrée unique du dépôt.
+
+Pour tester plus tard le multi-tenant par sous-domaine, ajouter à `/etc/hosts` :
+
+```
+127.0.0.1 karuta.local pokemon.karuta.local magic.karuta.local yugioh.karuta.local
+```
+
+### Lancer la stack
+
+```bash
+corepack enable
+pnpm install
+make dev
+```
+
+`make dev` copie `.env.example` vers `.env` s'il manque, puis démarre PostgreSQL, Redis,
+MinIO, l'API en rechargement à chaud, le worker et le scheduler. La stack est prête quand
+`http://localhost:8000/api/v1/health` répond `{"status": "ok"}`.
+
+| Service                  | URL                     |
+| :----------------------- | :---------------------- |
+| API                      | `http://localhost:8000` |
+| PostgreSQL               | `localhost:5432`        |
+| Redis                    | `localhost:6379`        |
+| MinIO (API / console)    | `localhost:9000`/`9001` |
+| pgAdmin (profil `tools`) | `http://localhost:5050` |
+
+pgAdmin ne fait pas partie du démarrage par défaut :
+
+```bash
+docker compose -f docker/compose/docker-compose.yml --profile tools up -d pgadmin
+```
+
+### Les cibles
+
+| Cible                            | Effet                                                    |
+| :------------------------------- | :------------------------------------------------------- |
+| `make` ou `make help`            | Liste les cibles disponibles.                            |
+| `make dev`                       | Lance toute la stack.                                    |
+| `make dev-api`                   | Lance l'infrastructure et l'API seules.                  |
+| `make down`                      | Arrête la stack en conservant les données.               |
+| `make logs`                      | Suit les journaux de l'API et du worker.                 |
+| `make lint`                      | Ruff, Mypy, ESLint et TypeScript — ce que vérifie la CI. |
+| `make format`                    | Reformate le code Python et JavaScript.                  |
+| `make test`                      | Exécute les suites de tests.                             |
+| `make migrate`, `make migration` | Migrations Alembic — à partir de KAR-14.                 |
+| `make seed`                      | Jeu de données de démonstration — à partir de KAR-24.    |
+| `make api-client`                | Régénère le client d'API — à partir de KAR-89.           |
+| `make crawl`                     | Lance un spider — à partir de KAR-68.                    |
+
+Les quatre dernières cibles existent déjà mais s'arrêtent sur un message tant que leur
+prérequis n'est pas livré. `make test` n'exécute pour l'instant que le volet JavaScript :
+la suite Python arrive avec KAR-8.
+
+`make lint` et `make test` tournent sur le poste et non dans les conteneurs — ils
+exécutent exactement ce que lance la CI et n'exigent pas que la stack soit démarrée.
 
 ## Configuration
 
-Copier `.env.example` vers `.env` et renseigner les valeurs locales. Le fichier
-`.env` n'est jamais versionné.
+`.env` n'est jamais versionné ; `.env.example` en donne le modèle et décrit une exécution
+sur le poste. Il n'y a rien à y modifier pour démarrer : le fichier Compose surcharge les
+hôtes par les noms de services du réseau Docker.
+
+`docker compose … down` conserve les données. Seul `down -v` les détruit — et détruire le
+volume `pgdata` est le seul moyen de rejouer `docker/postgres/init.sql`, que PostgreSQL
+n'exécute que sur une grappe vide.
