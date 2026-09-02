@@ -31,6 +31,11 @@ docker/**/data/
 !.vscode/extensions.json
 !.vscode/settings.json
 
+# Réglages d'agent propres à un poste : ils accumulent les autorisations d'outils
+# accordées par leur propriétaire et n'ont pas de sens partagés. Un settings.json
+# d'équipe, lui, resterait versionnable.
+.claude/settings.local.json
+
 # Le client d'API généré par Orval est volontairement versionné : la CI le
 # régénère et échoue sur toute divergence (doc 05 §9). Ne pas ignorer
 # frontend/src/generated/ ni backoffice/src/generated/.
