@@ -53,3 +53,5 @@ Elles ne sont vérifiées qu'en revue tant que le code applicatif n'existe pas :
 
 Ces règles viennent du document 10 « Conventions de développement & Definition of
 Done », §3.
+
+Branche de vérification du filtrage de CI Backend (KAR-8). À ne pas fusionner.
