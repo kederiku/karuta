@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Alignée sur la version de ruff installée dans backend/api : un hook plus récent
+    # que le projet signalerait des erreurs que la CI ne verrait pas.
+    rev: v0.16.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        # pre-commit s'exécute depuis la racine du dépôt, qui ne porte aucun
+        # pyproject.toml : sans --directory, uv ne trouve pas le projet à typer.
+        entry: uv run --directory backend/api mypy .
+        language: system
+        files: ^backend/api/
+        pass_filenames: false

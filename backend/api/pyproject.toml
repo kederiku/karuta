@@ -15,3 +15,61 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/karuta"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pre-commit>=4.6.2",
+    "ruff>=0.16.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",       # pycodestyle
+    "F",            # pyflakes
+    "I",            # isort
+    "N",            # pep8-naming
+    "UP",           # pyupgrade
+    "B",            # bugbear
+    "C4",           # comprehensions
+    "SIM",          # simplify
+    "TCH",          # type-checking imports
+    "RUF",          # ruff
+    "ASYNC",        # pièges async
+    "S",            # bandit (sécurité)
+    "PTH",          # préférer pathlib
+    "D",            # pydocstyle : présence et format des docstrings
+    "ERA",          # eradicate : code commenté interdit
+    "TD",           # flake8-todos : TODO(KAR-XX): description
+    "PGH",          # pygrep-hooks : noqa et type: ignore sans code interdits
+]
+ignore = [
+    "E501",         # géré par le formateur
+    "D100", "D104", # docstring de module et de package non exigées
+    "D105", "D107", # méthodes magiques et __init__
+    "TD001",        # FIXME et HACK autorisés en plus de TODO
+    "TD003",        # le ticket entre parenthèses suffit, pas de lien exigé
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "D"]           # assert autorisé, pas de docstring exigée
+"migrations/*" = ["E501", "N", "D"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["scrapy.*", "taskiq.*"]
+ignore_missing_imports = true

@@ -1,0 +1,16 @@
+{
+  // L'environnement Python n'est pas à la racine du dépôt : sans ce chemin, les
+  // extensions Ruff et Mypy ne trouvent pas les versions épinglées par uv.lock et
+  // retombent sur leurs binaires embarqués, dont les verdicts diffèrent de la CI.
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/api/.venv/bin/python",
+  "ruff.importStrategy": "fromEnvironment",
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  }
+}
