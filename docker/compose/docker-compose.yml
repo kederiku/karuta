@@ -1,0 +1,183 @@
+# Sans nom explicite, Compose déduit le projet du répertoire de ce fichier et préfixe
+# les volumes par « compose » : les données paraîtraient perdues dès que la commande
+# de lancement changerait de répertoire d'ancrage.
+name: karuta
+
+# Les trois services Python partagent la même image et la même configuration ; les
+# ancres évitent trois copies qui divergeraient à la première correction.
+x-api-build: &api-build
+  context: ../..
+  dockerfile: docker/api/Dockerfile
+  target: dev
+
+x-api-environment: &api-environment
+  # .env décrit la machine hôte, où « localhost » désigne l'hôte ; dans le réseau
+  # Compose il désignerait le conteneur lui-même, qui ne joindrait aucune dépendance.
+  # Aucune de ces variables n'est lue aujourd'hui : elles anticipent KAR-11 et KAR-14.
+  POSTGRES_HOST: postgres
+  # Le volume postgres est initialisé avec « karuta » alors que .env.example porte
+  # « change-me » : sans cette ligne, la première connexion réelle échouerait.
+  POSTGRES_PASSWORD: karuta
+  REDIS_URL: redis://redis:6379/0
+  TASKIQ_BROKER_URL: redis://redis:6379/1
+  # S3_PUBLIC_URL n'est volontairement pas réécrite : elle sert à fabriquer des URLs
+  # de médias déréférencées depuis le navigateur de l'hôte, par le port publié.
+  S3_ENDPOINT_URL: http://minio:9000
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: karuta
+      POSTGRES_USER: karuta
+      POSTGRES_PASSWORD: karuta
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Rejoué uniquement quand le volume est vide : modifier ce script impose de
+      # détruire pgdata pour qu'il reprenne effet.
+      - ../postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      # Pendant l'initialisation, l'entrypoint sert un serveur temporaire en
+      # listen_addresses='' : une sonde sur la socket Unix le déclarerait prêt avant
+      # la fin d'init.sql. Forcer TCP fait échouer la sonde jusqu'à la fin réelle.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U karuta"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      # Sans intervalle explicite, Docker applique trente secondes et n'exécute la
+      # première sonde qu'à ce moment : l'API attendrait autant à chaque démarrage.
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      # Cette sonde conditionne la création du bucket : Compose refuse de démarrer un
+      # « condition: service_healthy » visant un service qui n'en déclare aucune.
+      # mc est embarqué dans l'image serveur et interroge le service lui-même.
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  createbuckets:
+    # Conteneur jetable : le serveur MinIO ne sait pas déclarer un bucket à son
+    # démarrage, et mc est le client officiel du même éditeur. L'ENTRYPOINT de
+    # l'image étant « mc », il faut le remplacer pour enchaîner deux commandes.
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    # Les deux commandes sont rejouables : le conteneur ressort en 0 à chaque cycle,
+    # ce qui est le fonctionnement attendu et non un échec.
+    command:
+      - |
+        mc alias set local http://minio:9000 minioadmin minioadmin &&
+        mc mb --ignore-existing local/karuta-media
+    restart: "no"
+
+  api:
+    build: *api-build
+    # --reload-dir cantonne la surveillance aux sources : watchfiles n'étant pas au
+    # verrou, uvicorn se rabat sur une scrutation qui parcourrait sinon tout /app,
+    # y compris l'environnement virtuel monté par-dessus.
+    command: uvicorn karuta.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app/src
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../../.env
+    environment: *api-environment
+    volumes:
+      # Rechargement à chaud : les sources de l'hôte remplacent celles de l'image.
+      - ../../backend/api:/app
+      # Volume anonyme : le montage ci-dessus masquerait l'environnement virtuel
+      # construit dans l'image, et lui substituerait celui de l'hôte, compilé pour
+      # macOS. Après un changement d'uv.lock, il faut le renouveler explicitement.
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # Distingue « le processus tourne » de « l'API répond » dans compose ps.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  worker:
+    build: *api-build
+    # TODO(KAR-74): remplacer l'attente par « taskiq worker karuta.infrastructure.tasks.broker:broker --reload ».
+    command: ["sleep", "infinity"]
+    # sleep en PID 1 n'a pas de gestionnaire pour SIGTERM : sans superviseur, chaque
+    # arrêt attendrait le délai de grâce complet avant le SIGKILL.
+    init: true
+    env_file:
+      - ../../.env
+    environment: *api-environment
+    volumes:
+      - ../../backend/api:/app
+      - /app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build: *api-build
+    # TODO(KAR-74): remplacer l'attente par « taskiq scheduler karuta.workers.scheduler:scheduler ».
+    command: ["sleep", "infinity"]
+    init: true
+    env_file:
+      - ../../.env
+    environment: *api-environment
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      # Le doc 09 §2 prescrit dev@karuta.local, que pgAdmin refuse au premier
+      # démarrage : « .local » est réservé par la RFC 6762 et sa validation d'adresse
+      # le rejette, y compris avec ALLOW_SPECIAL_EMAIL_DOMAINS. Le domaine retenu est
+      # réservé à la documentation par la RFC 2606, donc jamais attribuable.
+      PGADMIN_DEFAULT_EMAIL: dev@karuta.example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    # Hors de make dev : à lancer par « --profile tools ».
+    profiles: [tools]
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

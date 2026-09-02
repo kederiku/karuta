@@ -1,0 +1,32 @@
+# Le contexte de construction est la racine du dépôt : sans exclusions, le démon
+# recevrait l'historique Git et les dépendances des deux applications Next.js à
+# chaque construction d'image.
+.git
+.github
+
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/.turbo
+
+# L'environnement virtuel de l'hôte contient des binaires macOS et un interpréteur
+# lié à un chemin de l'hôte : copié dans l'image, il écraserait celui qu'uv y
+# construit et rendrait uvicorn inexécutable.
+**/.venv
+
+# Les caches d'outils n'ont aucun sens dans une image et invalideraient la couche
+# de copie à chaque exécution locale de Ruff ou de Mypy.
+**/__pycache__
+**/*.pyc
+**/.mypy_cache
+**/.pytest_cache
+**/.ruff_cache
+
+# La configuration locale est fournie au conteneur par env_file, jamais copiée
+# dans une image (doc 09 §6).
+.env
+.env.*
+
+# Données de volumes montées localement depuis le dépôt.
+docker/**/data

@@ -1,0 +1,4 @@
+# Déclinaison de production de la stack. Squelette : les services, leurs images
+# publiées et leurs contraintes de ressources sont posés par KAR-151, en même temps
+# que les Dockerfiles de production dont ils dépendent.
+services: {}

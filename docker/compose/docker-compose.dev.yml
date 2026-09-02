@@ -1,0 +1,9 @@
+# Surcharges locales du poste de développement, appliquées en second :
+#   docker compose -f docker/compose/docker-compose.yml \
+#                  -f docker/compose/docker-compose.dev.yml up -d
+#
+# Le fichier est vide à dessein. Le doc 03 §2 lui attribuait le rechargement à chaud
+# et pgAdmin, que le doc 09 §2 place déjà dans le fichier de base ; il ne reste donc
+# que les surcharges propres à une machine — ports déjà occupés, ressources, montages
+# supplémentaires — qui n'ont pas à être versionnées pour tout le monde.
+services: {}
