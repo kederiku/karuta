@@ -29,8 +29,33 @@ uv run uvicorn karuta.main:app --reload
 
 La documentation et le schéma sont désactivés lorsque `ENVIRONMENT=production`.
 
-Le lancement via Docker Compose et le point d'entrée unique `make dev` arrivent avec
-KAR-6 et KAR-7.
+### Avec Docker Compose
+
+L'API seule ne suffit pas dès qu'une dépendance entre en jeu. La stack complète —
+PostgreSQL, Redis, MinIO, l'API en rechargement à chaud, le worker et le scheduler —
+se lance depuis la racine du dépôt, après avoir copié `.env.example` vers `.env` :
+
+```bash
+cp .env.example .env
+docker compose -f docker/compose/docker-compose.yml up -d --build
+```
+
+Le code de ce dossier est monté dans le conteneur : une modification est rechargée sans
+reconstruction. En revanche, un changement de `uv.lock` impose de renouveler
+l'environnement virtuel du conteneur, qui vit dans un volume :
+
+```bash
+docker compose -f docker/compose/docker-compose.yml up -d --build --renew-anon-volumes
+```
+
+`docker compose … down` conserve les données ; seul `down -v` les détruit — et détruire
+le volume `pgdata` est le seul moyen de rejouer `docker/postgres/init.sql`, que
+PostgreSQL n'exécute que sur une grappe vide.
+
+pgAdmin est disponible sur `http://localhost:5050` en ajoutant `--profile tools`,
+avec `dev@karuta.example.com` / `admin`.
+
+Le point d'entrée unique `make dev` arrive avec KAR-7.
 
 ## Qualité du code
 
