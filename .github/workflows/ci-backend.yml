@@ -1,0 +1,86 @@
+# Déclenchement systématique, filtrage à l'intérieur du job (ADR-0022) : un workflow non
+# déclenché ne rapporte aucun statut, et le check requis de la protection de main resterait
+# indéfiniment en attente sur une pull request qui ne touche pas le backend.
+name: CI Backend
+on:
+  pull_request:
+  push: { branches: [main] }
+jobs:
+  quality:
+    # Ce nom est le check requis déclaré dans la protection de main : le renommer casse la
+    # protection sans avertissement (ADR-0022).
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: test, POSTGRES_DB: karuta_test, POSTGRES_USER: test }
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-retries 10
+        ports: ["5432:5432"]
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+        # L'historique complet fournit la base de comparaison de l'étape suivante.
+        with: { fetch-depth: 0 }
+
+      # Le filtrage est calculé par git : dorny/paths-filter serait une dépendance externe non
+      # autorisée (doc 19 §8) pour un besoin qui tient en quelques lignes de shell. Sur push,
+      # aucun filtrage — tout s'exécute sur la branche protégée.
+      - name: Détecter les changements backend
+        id: changes
+        run: |
+          paths='^(backend/api/|docker/api/|docker/compose/|\.github/workflows/ci-backend\.yml)'
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" | grep -Eq "$paths"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: astral-sh/setup-uv@v10.0.1
+        if: steps.changes.outputs.run == 'true'
+        with: { enable-cache: true }
+
+      - run: uv sync --frozen
+        if: steps.changes.outputs.run == 'true'
+        working-directory: backend/api
+
+      - name: Lint
+        if: steps.changes.outputs.run == 'true'
+        run: uv run ruff check . && uv run ruff format --check .
+        working-directory: backend/api
+
+      - name: Types
+        if: steps.changes.outputs.run == 'true'
+        run: uv run mypy .
+        working-directory: backend/api
+
+      # TODO(KAR-14): l'étape s'active d'elle-même à la création d'alembic.ini ; lui porter
+      # alors les variables de connexion à karuta_test, que le doc 09 §4 signale comme
+      # manquantes.
+      - name: Migrations réversibles
+        if: >-
+          steps.changes.outputs.run == 'true'
+          && hashFiles('backend/api/alembic.ini') != ''
+        run: >-
+          uv run alembic upgrade head
+          && uv run alembic downgrade base
+          && uv run alembic upgrade head
+        working-directory: backend/api
+
+      - name: Tests
+        if: steps.changes.outputs.run == 'true'
+        run: uv run pytest --cov=karuta --cov-report=xml --cov-fail-under=75
+        working-directory: backend/api
+
+      # TODO(KAR-87): l'étape s'active d'elle-même à la création du jeu de référence.
+      - name: Matching — non-régression
+        if: >-
+          steps.changes.outputs.run == 'true'
+          && hashFiles('backend/api/tests/integration/test_matching_golden_set.py') != ''
+        run: uv run pytest tests/integration/test_matching_golden_set.py -v
+        working-directory: backend/api

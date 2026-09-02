@@ -102,8 +102,8 @@ docker compose -f docker/compose/docker-compose.yml --profile tools up -d pgadmi
 | `make crawl`                     | Lance un spider — à partir de KAR-68.                    |
 
 Les quatre dernières cibles existent déjà mais s'arrêtent sur un message tant que leur
-prérequis n'est pas livré. `make test` n'exécute pour l'instant que le volet JavaScript :
-la suite Python arrive avec KAR-8.
+prérequis n'est pas livré. `make test` exécute la suite Python ; son volet JavaScript
+reste vide tant qu'aucune application n'a de tests.
 
 `make lint` et `make test` tournent sur le poste et non dans les conteneurs — ils
 exécutent exactement ce que lance la CI et n'exigent pas que la stack soit démarrée.

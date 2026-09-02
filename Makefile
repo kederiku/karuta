@@ -47,14 +47,8 @@ seed:           ## Charge le jeu de données de démonstration
 
 test: test-api test-front  ## Exécute les suites de tests
 
-# pytest arrive avec KAR-8 (décision E3). Son absence n'est pas un test rouge : la cible le dit
-# et sort en 0, puis exécute la suite réelle et son seuil de couverture dès qu'il est installé.
 test-api:       ## Exécute la suite Python avec la couverture
-	@if $(UV_API) python -c "import pytest" >/dev/null 2>&1; then \
-		$(UV_API) pytest -x --cov=karuta --cov-report=term-missing --cov-fail-under=75; \
-	else \
-		echo "make test-api : disponible à partir de KAR-8, pytest n'étant pas encore installé."; \
-	fi
+	$(UV_API) pytest -x --cov=karuta --cov-report=term-missing --cov-fail-under=75
 
 test-front:     ## Exécute les suites JavaScript
 	pnpm test

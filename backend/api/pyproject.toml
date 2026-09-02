@@ -18,8 +18,12 @@ packages = ["src/karuta"]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "mypy>=2.3.1",
     "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
     "ruff>=0.16.5",
 ]
 
@@ -73,3 +77,11 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["scrapy.*", "taskiq.*"]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Mode strict de pytest-asyncio : une coroutine de test ne s'exécute que si elle porte son
+# marqueur, plutôt que d'être collectée silencieusement. La portée des fixtures asynchrones est
+# fixée explicitement, faute de quoi pytest-asyncio avertit à chaque exécution.
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
