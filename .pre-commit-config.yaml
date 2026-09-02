@@ -23,3 +23,10 @@ repos:
         language: system
         files: ^backend/api/
         pass_filenames: false
+      - id: eslint
+        name: eslint
+        # ESLint vit dans le workspace pnpm de la racine, pas dans un environnement
+        # que pre-commit sait construire lui-même : d'où language: system.
+        entry: pnpm lint:fix
+        language: system
+        files: \.(ts|tsx)$

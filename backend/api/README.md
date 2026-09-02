@@ -21,10 +21,10 @@ uv sync
 uv run uvicorn karuta.main:app --reload
 ```
 
-| URL | Contenu |
-| :-- | :-- |
-| `http://localhost:8000/api/v1/health` | Sonde de liveness |
-| `http://localhost:8000/api/v1/docs` | Documentation interactive |
+| URL                                         | Contenu                                     |
+| :------------------------------------------ | :------------------------------------------ |
+| `http://localhost:8000/api/v1/health`       | Sonde de liveness                           |
+| `http://localhost:8000/api/v1/docs`         | Documentation interactive                   |
 | `http://localhost:8000/api/v1/openapi.json` | Schéma OpenAPI, source du client TypeScript |
 
 La documentation et le schéma sont désactivés lorsque `ENVIRONMENT=production`.
@@ -69,12 +69,12 @@ l'environnement de ce service, alors que sa configuration vit à la racine.
 
 Architecture hexagonale : les dépendances ne pointent jamais vers l'extérieur.
 
-| Chemin | Contenu |
-| :-- | :-- |
-| `src/karuta/domain/` | Cœur métier — n'importe ni SQLAlchemy, ni FastAPI, ni Pydantic. |
-| `src/karuta/application/` | Cas d'usage et orchestration. |
-| `src/karuta/infrastructure/` | Implémentations techniques : base, cache, stockage, tâches. |
-| `src/karuta/interfaces/` | Routers FastAPI, schémas Pydantic, commandes. |
-| `src/karuta/workers/` | Tâches TaskIQ. |
-| `migrations/` | Migrations Alembic. |
-| `tests/` | `unit/`, `integration/`, `e2e/`, `factories/`. |
+| Chemin                       | Contenu                                                         |
+| :--------------------------- | :-------------------------------------------------------------- |
+| `src/karuta/domain/`         | Cœur métier — n'importe ni SQLAlchemy, ni FastAPI, ni Pydantic. |
+| `src/karuta/application/`    | Cas d'usage et orchestration.                                   |
+| `src/karuta/infrastructure/` | Implémentations techniques : base, cache, stockage, tâches.     |
+| `src/karuta/interfaces/`     | Routers FastAPI, schémas Pydantic, commandes.                   |
+| `src/karuta/workers/`        | Tâches TaskIQ.                                                  |
+| `migrations/`                | Migrations Alembic.                                             |
+| `tests/`                     | `unit/`, `integration/`, `e2e/`, `factories/`.                  |

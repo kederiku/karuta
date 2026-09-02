@@ -1,0 +1,12 @@
+node_modules
+.next
+dist
+coverage
+
+# Généré par pnpm, réécrit intégralement à chaque install.
+pnpm-lock.yaml
+
+# Généré par Orval et versionné (ADR-0024) : reformater ferait diverger le fichier
+# commité de la sortie du générateur, que la CI compare.
+frontend/src/generated
+backoffice/src/generated

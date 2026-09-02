@@ -3,6 +3,9 @@
     "charliermarsh.ruff",
     "ms-python.mypy-type-checker",
     "ms-python.python",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
     "ms-azuretools.vscode-docker",
     "eamodio.gitlens",
     "usernamehw.errorlens"
