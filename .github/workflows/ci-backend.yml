@@ -77,10 +77,14 @@ jobs:
         run: uv run pytest --cov=karuta --cov-report=xml --cov-fail-under=75
         working-directory: backend/api
 
-      # TODO(KAR-87): l'étape s'active d'elle-même à la création du jeu de référence.
+      # TODO(KAR-87): l'étape s'active d'elle-même à la création de la référence de
+      # non-régression, que ce ticket commite avec les deux scripts du doc 15 §9.
       - name: Matching — non-régression
         if: >-
           steps.changes.outputs.run == 'true'
-          && hashFiles('backend/api/tests/integration/test_matching_golden_set.py') != ''
-        run: uv run pytest tests/integration/test_matching_golden_set.py -v
+          && hashFiles('backend/api/.matching-baseline.json') != ''
+        run: >-
+          uv run python -m scripts.evaluate_matching --set golden --json > metrics.json
+          && uv run python -m scripts.check_regression metrics.json
+          --baseline .matching-baseline.json
         working-directory: backend/api
