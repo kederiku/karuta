@@ -1,0 +1,56 @@
+# Contrôle transverse du doc 09 §4 : il ne dépend d'aucune pile, donc d'aucun chemin. D'où
+# l'absence d'étape de filtrage — ADR-0022 est satisfait par construction, et non par un filtre
+# qui rendrait toujours run=true.
+name: Commit Lint
+
+# Pas de « push: { branches: [main] } », à la différence des deux autres workflows : l'entrée de
+# ce job est la plage de commits qu'une pull request ajoute, et cette entrée n'existe pas sur un
+# push. La fusion se faisant par commit de fusion, main ne reçoit que des commits déjà lintés à
+# l'octet près, plus le commit de fusion, que commitlint ignore par défaut. Cette divergence de
+# montage tombe avec la stratégie de fusion : en squash, le titre de la pull request deviendrait
+# un commit jamais linté.
+on:
+  pull_request:
+
+jobs:
+  # Nom fixé par le tableau « Contrôles transverses » du doc 09 §4, et déclaré comme check
+  # requis dans la protection de main : le renommer casse la protection sans avertissement.
+  # Pas de job « quality » ici : l'agrégation des checks homonymes mesurée par KAR-9 est un
+  # constat de comportement, que le doc 09 §4 demande de revérifier si un troisième workflow
+  # apparaît — c'est celui-ci.
+  commit-lint:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 n'est pas décoratif : commitlint calcule une base commune entre --from
+      # et --to, et refuse un clone superficiel.
+      - uses: actions/checkout@v7.0.1
+        with: { fetch-depth: 0 }
+
+      # Aucune version de pnpm n'est passée : l'action lit packageManager du package.json
+      # racine, seule source de vérité (E6). Elle précède setup-node, dont le cache pnpm a
+      # besoin de pnpm dans le PATH.
+      - uses: pnpm/action-setup@v6.0.10
+
+      - uses: actions/setup-node@v7.0.0
+        with: { node-version: 24, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+
+      # --from est exclusif : commitlint lit « git log <from>..<to> », en deux points.
+      # origin/<base> plutôt que pull_request.base.sha, qui fige la pointe de main à
+      # l'événement : après un rebase, la plage remonterait sur des commits déjà fusionnés,
+      # dont le tout premier du dépôt, antérieur à la convention. --to sur head.sha et non
+      # HEAD, qui vaut ici le commit de fusion éphémère de GitHub. Les commits de fusion
+      # contenus dans la plage sont écartés par la liste d'ignorés de commitlint.
+      # Pas de --strict : un corps dont une ligne commence par « mot: » est lu comme un pied et
+      # produit un avertissement footer-leading-blank, que --strict rendrait bloquant.
+      - name: Format des messages de commit
+        run: >-
+          pnpm exec commitlint
+          --from origin/${{ github.base_ref }}
+          --to ${{ github.event.pull_request.head.sha }}
+          --verbose
+
+      # La configuration est elle-même sous test : les exemples du doc 10 §1 passent, les formes
+      # qu'il proscrit échouent. Même script qu'en local, dans make lint (doc 19 §6).
+      - run: bash scripts/check-commit-format.sh
