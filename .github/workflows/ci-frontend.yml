@@ -1,0 +1,84 @@
+# Déclenchement systématique, filtrage à l'intérieur du job (ADR-0022) : un workflow non
+# déclenché ne rapporte aucun statut, et le check requis de la protection de main resterait
+# indéfiniment en attente sur une pull request qui ne touche pas le frontend.
+name: CI Frontend
+on:
+  pull_request:
+  push: { branches: [main] }
+jobs:
+  quality:
+    # Ce nom est le check requis déclaré dans la protection de main : le renommer casse la
+    # protection sans avertissement (ADR-0022).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        # L'historique complet fournit la base de comparaison de l'étape suivante.
+        with: { fetch-depth: 0 }
+
+      # Le filtrage est calculé par git : dorny/paths-filter serait une dépendance externe non
+      # autorisée (doc 19 §8) pour un besoin qui tient en quelques lignes de shell. Sur push,
+      # aucun filtrage — tout s'exécute sur la branche protégée.
+      - name: Détecter les changements frontend
+        id: changes
+        run: |
+          # Le motif ne conditionne que les étapes déléguées par workspace. --no-renames force
+          # git à montrer aussi le chemin d'origine : sans lui, un fichier sorti de packages/
+          # n'apparaîtrait que par sa destination et l'étape serait sautée à tort. quotePath est
+          # désarmé, sans quoi un chemin accentué est cité et l'ancre ^ ne matche plus.
+          paths='^(frontend/|backoffice/|packages/'
+          paths=$paths'|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml'
+          paths=$paths'|eslint\.config\.mjs|\.prettierrc\.json|\.prettierignore'
+          paths=$paths'|\.github/workflows/ci-frontend\.yml)'
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          base="origin/${{ github.base_ref }}...HEAD"
+          if git -c core.quotePath=false diff --name-only --no-renames "$base" \
+            | grep -Eq "$paths"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Aucune version de pnpm n'est passée : l'action lit packageManager du package.json
+      # racine, seule source de vérité, comme corepack dans le Dockerfile frontend (E6).
+      - uses: pnpm/action-setup@v6.0.10
+
+      - uses: actions/setup-node@v7.0.0
+        with: { node-version: 24, cache: pnpm }
+
+      - run: pnpm install --frozen-lockfile
+
+      # Ces deux commandes sont uniques et lancées depuis la racine (E16) : leur entrée est le
+      # dépôt entier, pas les trois répertoires du motif. prettier --check . couvre aussi les
+      # README, les fichiers de compose et .pre-commit-config.yaml. Les conditionner laisserait
+      # passer une PR mal formatée sur l'un d'eux — d'où l'absence de if:, asymétrie assumée
+      # avec ci-backend, dont les commandes sont cantonnées par working-directory.
+      - run: pnpm lint
+
+      - run: pnpm format:check
+
+      - run: pnpm typecheck
+        if: steps.changes.outputs.run == 'true'
+
+      # test et build délèguent en pnpm -r --if-present (E16) : aucun paquet ne déclare
+      # encore ces scripts, la commande sort donc en 0 sans rien exécuter, et couvre les
+      # applications d'elle-même dès que KAR-88 et KAR-107 posent les leurs. Aucun « -- »
+      # devant --coverage : il survivrait à la délégation et le drapeau finirait positionnel.
+      - run: pnpm test --coverage
+        if: steps.changes.outputs.run == 'true'
+
+      - run: pnpm build
+        if: steps.changes.outputs.run == 'true'
+
+      # TODO(KAR-89): l'étape s'active d'elle-même à la création de la configuration Orval.
+      # git diff seul est aveugle aux fichiers non suivis : à la première génération, tout le
+      # client serait neuf et l'étape resterait verte. L'index sert donc de point de comparaison.
+      - name: Client API à jour
+        if: >-
+          steps.changes.outputs.run == 'true'
+          && hashFiles('backoffice/orval.config.ts') != ''
+        run: >-
+          pnpm generate:api
+          && git add -A frontend/src/generated/ backoffice/src/generated/
+          && git diff --cached --exit-code frontend/src/generated/ backoffice/src/generated/
