@@ -149,8 +149,10 @@ commitlint vérifie ce format à deux endroits : un hook `commit-msg` en local, 
 à l'impératif, et qu'elle ne porte pas de majuscule superflue en milieu de phrase, un nom
 propre comme `Orval` ou `FastAPI` devant rester possible.
 
-Les pull requests sont fusionnées par commit de fusion, jamais par squash : ce sont les commits
-eux-mêmes, déjà vérifiés, qui arrivent sur `main`.
+Les deux modes de fusion sont admis. En squash, ce n'est plus un commit de la branche qui
+arrive sur `main` mais un message neuf, dérivé du **titre de la pull request** : ce titre suit
+donc le même format, et `commit-lint` le vérifie avant que la fusion soit possible. Le suffixe
+`(#N)` que GitHub ajoute ne change rien.
 
 Le reste — modèle de pull request, taille cible, Definition of Done — vit dans le document 10
 de l'espace Notion Karuta, seule source de vérité (ADR-0026).

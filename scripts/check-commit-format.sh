@@ -16,6 +16,8 @@ valides=(
   "perf(db): ajoute un index partiel sur les offres en stock"
   "perf(db): partitionne price_history par mois"
   "feat(frontend): ajoute le client Orval généré depuis FastAPI"
+  # Forme d'un titre de pull request squashé : GitHub y ajoute « (#N) », toléré.
+  "chore(infra): met en place la ci (#16)"
   "chore(infra): met en place la ci"$'\n\n'"Refs KAR-10"
   "chore(db): partitionne price_history"$'\n\n'"Refs KAR-10"$'\n'"Refs ADR-0022"
 )

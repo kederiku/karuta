@@ -3,14 +3,15 @@
 # qui rendrait toujours run=true.
 name: Commit Lint
 
-# Pas de « push: { branches: [main] } », à la différence des deux autres workflows : l'entrée de
-# ce job est la plage de commits qu'une pull request ajoute, et cette entrée n'existe pas sur un
-# push. La fusion se faisant par commit de fusion, main ne reçoit que des commits déjà lintés à
-# l'octet près, plus le commit de fusion, que commitlint ignore par défaut. Cette divergence de
-# montage tombe avec la stratégie de fusion : en squash, le titre de la pull request deviendrait
-# un commit jamais linté.
+# Le squash étant admis, ce qui atterrit sur main n'est plus toujours un commit que la branche
+# portait : c'est un message neuf, dérivé du titre de la pull request. Le workflow couvre donc
+# les deux modes de fusion — le titre est linté avant, et ce qui a réellement atterri est linté
+# après. « edited » est indispensable : sans lui, un titre corrigé après l'ouverture ne
+# redéclencherait rien et passerait sans contrôle.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push: { branches: [main] }
 
 jobs:
   # Nom fixé par le tableau « Contrôles transverses » du doc 09 §4, et déclaré comme check
@@ -45,10 +46,35 @@ jobs:
       # Pas de --strict : un corps dont une ligne commence par « mot: » est lu comme un pied et
       # produit un avertissement footer-leading-blank, que --strict rendrait bloquant.
       - name: Format des messages de commit
+        if: github.event_name == 'pull_request'
         run: >-
           pnpm exec commitlint
           --from origin/${{ github.base_ref }}
           --to ${{ github.event.pull_request.head.sha }}
+          --verbose
+
+      # En squash, le titre devient le sujet du commit posé sur main, et aucune des étapes
+      # ci-dessus ne le voit : c'est ici qu'il est arrêté, tant que la fusion est encore
+      # possible. Le titre passe par l'environnement et non par une interpolation dans run:,
+      # qui l'exécuterait comme du shell — il est rédigé par l'auteur de la pull request, y
+      # compris depuis un dépôt forké. Le suffixe « (#N) » que GitHub ajoute au message final
+      # ne change rien au verdict, vérifié.
+      - name: Format du titre de la pull request
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$PR_TITLE" | pnpm exec commitlint --verbose
+
+      # Filet après coup, non bloquant par nature : il couvre le seul trou que les deux étapes
+      # ci-dessus laissent, un message de squash réécrit à la main dans la boîte de dialogue de
+      # fusion, que rien n'aura vu avant. En fusion par commit de fusion, la plage ne contient
+      # que des commits déjà lintés et le commit de fusion, ignoré : l'étape est alors muette.
+      - name: Format du commit posé sur main
+        if: github.event_name == 'push'
+        run: >-
+          pnpm exec commitlint
+          --from ${{ github.event.before }}
+          --to ${{ github.sha }}
           --verbose
 
       # La configuration est elle-même sous test : les exemples du doc 10 §1 passent, les formes
