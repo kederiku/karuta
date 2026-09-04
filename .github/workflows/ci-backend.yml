@@ -66,8 +66,8 @@ jobs:
         working-directory: backend/api
 
       # TODO(KAR-14): l'étape s'active d'elle-même à la création d'alembic.ini ; lui porter
-      # alors les variables de connexion à karuta_test, que le doc 09 §4 signale comme
-      # manquantes.
+      # alors les variables de connexion à karuta_test, celles que l'étape « Tests » déclare
+      # depuis KAR-11.
       - name: Migrations réversibles
         if: >-
           steps.changes.outputs.run == 'true'
@@ -78,8 +78,24 @@ jobs:
           && uv run alembic upgrade head
         working-directory: backend/api
 
+      # Depuis KAR-11, l'import de karuta.main construit Settings, qui refuse de démarrer sans
+      # ses variables : sans ce bloc, la collecte échouerait avant le premier test. Les valeurs
+      # de connexion reprennent les services déclarés au niveau du job ; les secrets sont
+      # manifestement factices, aucun secret réel n'entrant en CI (doc 09 §6) — GitHub Actions
+      # Secrets n'a rien à porter ici.
       - name: Tests
         if: steps.changes.outputs.run == 'true'
+        env:
+          ENVIRONMENT: development
+          SECRET_KEY: valeur-factice-de-ci
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: karuta_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          S3_ACCESS_KEY: valeur-factice-de-ci
+          S3_SECRET_KEY: valeur-factice-de-ci
+          INGEST_HMAC_SECRET: valeur-factice-de-ci
         run: uv run pytest --cov=karuta --cov-report=xml --cov-fail-under=75
         working-directory: backend/api
 

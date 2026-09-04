@@ -47,7 +47,11 @@ seed:           ## Charge le jeu de données de démonstration
 
 test: test-api test-front  ## Exécute les suites de tests
 
-test-api:       ## Exécute la suite Python avec la couverture
+# Depuis KAR-11, l'import de karuta.main construit Settings, qui refuse de démarrer sans ses
+# variables : sur un poste fraîchement cloné, la suite échouerait avant le premier test. La CI
+# n'a pas ce prérequis, aucun .env n'y étant versionné — elle les porte au bloc env: de son
+# étape « Tests ».
+test-api: .env  ## Exécute la suite Python avec la couverture
 	$(UV_API) pytest -x --cov=karuta --cov-report=term-missing --cov-fail-under=75
 
 test-front:     ## Exécute les suites JavaScript
