@@ -117,3 +117,42 @@ hôtes par les noms de services du réseau Docker.
 `docker compose … down` conserve les données. Seul `down -v` les détruit — et détruire le
 volume `pgdata` est le seul moyen de rejouer `docker/postgres/init.sql`, que PostgreSQL
 n'exécute que sur une grappe vide.
+
+## Contribuer
+
+`main` est protégée : pas de push direct, pull request obligatoire, CI verte requise.
+
+Une branche par ticket, nommée `<type>/KAR-<id>-<description-courte>` — par exemple
+`feat/KAR-23-matching-pipeline`. Les types sont ceux des commits.
+
+Les messages de commit suivent Conventional Commits, avec deux listes fermées :
+
+```
+<type>(<scope>): <description à l'impératif, minuscule, sans point final>
+
+[corps optionnel]
+
+[pied optionnel : Refs KAR-12, Refs ADR-0022, BREAKING CHANGE]
+```
+
+| Champ | Valeurs admises                                                   |
+| :---- | :---------------------------------------------------------------- |
+| Type  | `feat` `fix` `refactor` `docs` `test` `chore` `perf`              |
+| Scope | `api` `scraping` `frontend` `backoffice` `ui` `db` `infra` `docs` |
+
+Le scope est obligatoire et désigne la zone du dépôt touchée. Un commit qui applique une
+décision d'architecture porte le scope de cette zone et cite la décision en pied,
+`Refs ADR-00NN`, à côté du `Refs KAR-N`.
+
+commitlint vérifie ce format à deux endroits : un hook `commit-msg` en local, et le job
+`commit-lint` en CI. Ce qu'il ne sait pas vérifier reste à la revue — que la description soit
+à l'impératif, et qu'elle ne porte pas de majuscule superflue en milieu de phrase, un nom
+propre comme `Orval` ou `FastAPI` devant rester possible.
+
+Les deux modes de fusion sont admis. En squash, ce n'est plus un commit de la branche qui
+arrive sur `main` mais un message neuf, dérivé du **titre de la pull request** : ce titre suit
+donc le même format, et `commit-lint` le vérifie avant que la fusion soit possible. Le suffixe
+`(#N)` que GitHub ajoute ne change rien.
+
+Le reste — modèle de pull request, taille cible, Definition of Done — vit dans le document 10
+de l'espace Notion Karuta, seule source de vérité (ADR-0026).

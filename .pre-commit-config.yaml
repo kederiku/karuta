@@ -1,3 +1,13 @@
+# « pre-commit install » installe les deux types de hooks sans drapeau : la commande documentée
+# dans le README de backend/api ne change pas. Elle doit en revanche être rejouée une fois par
+# clone existant, .git/hooks/ n'étant pas versionné.
+default_install_hook_types: [pre-commit, commit-msg]
+
+# Aucun hook ci-dessous ne déclare stages: ; sans cette ligne ils hériteraient de « tous les
+# stades » et seraient éligibles au stade commit-msg. Gitleaks, seul hook sans filtre de
+# fichiers, y tournerait une seconde fois à chaque commit, sur le même diff indexé.
+default_stages: [pre-commit]
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Alignée sur la version de ruff installée dans backend/api : un hook plus récent
@@ -30,3 +40,12 @@ repos:
         entry: pnpm lint:fix
         language: system
         files: \.(ts|tsx)$
+      - id: commitlint
+        name: commitlint
+        # Comme ESLint, commitlint vit dans le workspace pnpm de la racine : d'où
+        # language: system. pre-commit ajoute le chemin du message en argument, que --edit
+        # consomme ; lui seul fait écarter les lignes de commentaire de git et la zone de
+        # « git commit -v », qui seraient sinon lues comme du corps de message.
+        entry: pnpm exec commitlint --edit
+        language: system
+        stages: [commit-msg]

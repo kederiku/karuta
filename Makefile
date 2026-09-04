@@ -53,13 +53,16 @@ test-api:       ## Exécute la suite Python avec la couverture
 test-front:     ## Exécute les suites JavaScript
 	pnpm test
 
-lint:           ## Vérifie le style, le formatage et les types
+lint:           ## Vérifie le style, le formatage, les types et le format des commits
 	$(UV_API) ruff check .
 	$(UV_API) ruff format --check .
 	$(UV_API) mypy .
 	pnpm lint
 	pnpm format:check
 	pnpm typecheck
+# Le job commit-lint exécute ce même script : sans lui ici, une PR pouvait être verte en local
+# et rouge en CI, le faux vert que la parité du doc 19 §6 vise à fermer.
+	bash scripts/check-commit-format.sh
 
 format:         ## Reformate le code Python et JavaScript
 	$(UV_API) ruff format .

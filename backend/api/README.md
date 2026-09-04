@@ -74,19 +74,25 @@ ne se désactive jamais pour faire passer du code : c'est le code qui est corrig
 
 ### Hooks pre-commit
 
-Les hooks sont décrits par `.pre-commit-config.yaml`, **à la racine du dépôt** : ils
-couvrent Ruff, Gitleaks et Mypy. À installer une fois par clone, depuis n'importe où dans
-le dépôt :
+Les hooks sont décrits par `.pre-commit-config.yaml`, **à la racine du dépôt**. Avant chaque
+commit : Ruff, Gitleaks, Mypy et ESLint. Sur le message de commit : commitlint. À installer une
+fois par clone, depuis n'importe où dans le dépôt :
 
 ```bash
 uv run --directory backend/api pre-commit install
 ```
+
+La commande installe les deux types de hooks sans drapeau. **Un clone antérieur au hook
+`commit-msg` doit la rejouer une fois** : `.git/hooks/` n'est pas versionné.
 
 Pour rejouer tous les hooks sur tout le dépôt sans committer :
 
 ```bash
 uv run --directory backend/api pre-commit run --all-files
 ```
+
+Cette commande n'exerce pas commitlint, qui ne tourne qu'au stade `commit-msg` : le format des
+messages se vérifie par `bash scripts/check-commit-format.sh`, inclus dans `make lint`.
 
 Le détour par `uv run --directory` est nécessaire : `pre-commit` est installé dans
 l'environnement de ce service, alors que sa configuration vit à la racine.
