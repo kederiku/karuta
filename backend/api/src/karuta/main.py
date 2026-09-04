@@ -21,12 +21,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     Args:
         settings: Configuration à servir. Par défaut, celle du processus — un argument
             explicite permet de construire une application dans un autre environnement
-            sans passer par les variables du processus.
+            sans passer par les variables du processus. Une route qui déclarera
+            ``Depends(get_settings)`` recevra alors la configuration du processus, non
+            celle-ci : les deux ne coïncident que par ``app.dependency_overrides``.
 
     Returns:
         L'application prête à être servie.
     """
-    settings = settings or get_settings()
+    if settings is None:
+        settings = get_settings()
     is_production = settings.environment is Environment.PRODUCTION
 
     app = FastAPI(

@@ -137,6 +137,10 @@ Pytest, avec `httpx` pour le client de test de FastAPI. Depuis ce dossier :
 uv run pytest
 ```
 
+La suite importe `karuta.main`, donc construit `Settings` : elle exige une configuration
+complète. Sur un clone neuf, lancer d'abord `make test-api` depuis la racine, qui crée le `.env`
+s'il manque — `uv run pytest` seul échouerait à la collecte.
+
 Le seuil de couverture global du backend, 75 % (doc 10 §4), n'est pas dans
 `pyproject.toml` : il est porté par la ligne de commande, celle de la cible `make test-api`
 et celle de la CI. Pour rejouer exactement ce que vérifie la CI, depuis la racine du dépôt :

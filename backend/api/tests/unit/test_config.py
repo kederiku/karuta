@@ -5,7 +5,14 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from karuta.config import ConfigurationError, Settings, _find_env_file, get_settings
+import karuta.config
+from karuta.config import (
+    ConfigurationError,
+    Environment,
+    Settings,
+    _find_env_file,
+    get_settings,
+)
 
 # Toutes les valeurs sensibles du jeu de test partagent ce littéral, ce qui permet de le
 # chercher dans une représentation de l'objet pour vérifier qu'aucun secret n'en sort.
@@ -174,10 +181,36 @@ def test_find_env_file_outside_a_repository_returns_none(tmp_path: Path) -> None
 
 
 def test_find_env_file_locates_the_repository_of_this_checkout() -> None:
-    import karuta.config
-
     found = _find_env_file(Path(karuta.config.__file__))
 
     assert found is not None
     assert found.name == ".env"
     assert (found.parent / ".env.example").is_file()
+
+
+def test_get_settings_treats_an_empty_value_as_a_missing_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SECRET_KEY", "")
+
+    with pytest.raises(ConfigurationError) as error:
+        get_settings()
+
+    assert "SECRET_KEY" in str(error.value)
+
+
+def test_settings_built_from_the_example_file_alone_are_complete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Garde-fou anti-dérive : .env.example doit suffire à démarrer. Le test échoue dès qu'une
+    # variable requise entre dans le modèle sans être reportée dans le fichier, et couvre au
+    # passage le commentaire de fin de ligne d'ENVIRONMENT et les clés NEXT_PUBLIC_* ignorées.
+    for name in ENV_NAMES:
+        monkeypatch.delenv(name, raising=False)
+    env_file = _find_env_file(Path(karuta.config.__file__))
+    assert env_file is not None
+
+    settings = Settings(_env_file=env_file.parent / ".env.example")
+
+    assert settings.environment is Environment.DEVELOPMENT
+    assert settings.product_name == "Karuta"

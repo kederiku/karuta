@@ -19,7 +19,8 @@ def _find_env_file(module_path: Path) -> Path | None:
     backend/api : résolu depuis le répertoire courant, il ne serait jamais trouvé. La racine se
     reconnaît à son .env.example, versionné. Remonter d'un nombre fixe de niveaux serait plus
     court mais dépasserait la racine du système de fichiers dans l'image, où /app vaut
-    backend/api.
+    backend/api ; la remontée est donc bornée à la profondeur du paquet dans le dépôt, sans
+    quoi un .env.example étranger, plus haut sur le disque, ferait office de racine.
 
     Args:
         module_path: Fichier depuis lequel remonter.
@@ -28,7 +29,8 @@ def _find_env_file(module_path: Path) -> Path | None:
         Le chemin du .env attendu, ou ``None`` hors du dépôt — en conteneur notamment, où le
         .dockerignore écarte ces fichiers et où les valeurs arrivent par l'environnement.
     """
-    for directory in module_path.resolve().parents:
+    # src/karuta, src, backend/api, backend, racine.
+    for directory in module_path.resolve().parents[:5]:
         if (directory / ".env.example").is_file():
             return directory / ".env"
     return None
@@ -67,6 +69,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=_ENV_FILE,
         env_file_encoding="utf-8",
+        # « SECRET_KEY= » doit faire échouer le démarrage plutôt que fournir une chaîne vide au
+        # code qui signera les jetons : une valeur vide vaut absence.
+        env_ignore_empty=True,
         # Le même fichier porte les variables NEXT_PUBLIC_* du frontend, que ce modèle ne
         # couvre pas : sans cette tolérance, pydantic-settings les rejetterait comme inconnues.
         extra="ignore",
