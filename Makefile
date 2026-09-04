@@ -58,6 +58,7 @@ lint:           ## Vérifie le style, le formatage et les types
 	$(UV_API) ruff format --check .
 	$(UV_API) mypy .
 	pnpm lint
+	pnpm format:check
 	pnpm typecheck
 
 format:         ## Reformate le code Python et JavaScript
