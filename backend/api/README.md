@@ -58,6 +58,38 @@ avec `dev@karuta.example.com` / `admin`.
 Depuis la racine du dépôt, `make dev` fait la même chose en une commande, et `make down`
 arrête la stack. La liste des cibles est dans le README racine.
 
+## Configuration
+
+Toute la configuration passe par `src/karuta/config.py` : une classe `Settings`
+(pydantic-settings) qui type les variables du doc 03 §6, les valide **au démarrage** et refuse
+de démarrer si l'une des variables requises manque. Le message nomme alors les variables
+fautives, sans jamais afficher de valeur.
+
+Sont requises, sans valeur par défaut : `ENVIRONMENT`, `SECRET_KEY`, `POSTGRES_HOST`,
+`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` et
+`INGEST_HMAC_SECRET`. Les autres reprennent la valeur de développement du doc 03 §6, qui n'est
+pas sensible.
+
+D'où viennent les valeurs :
+
+| Contexte                            | Source                                                                                                                                                         |
+| :---------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Poste (`uv run …`, `make test-api`) | Le `.env` de la racine du dépôt. Son chemin est résolu depuis l'emplacement du module, pas depuis le répertoire courant ; `make test-api` le crée s'il manque. |
+| Conteneur                           | Les variables fournies par `env_file` et `environment` du fichier Compose — aucun `.env` n'est copié dans l'image.                                             |
+| CI                                  | Le bloc `env:` de l'étape « Tests » de `ci-backend.yml`, en valeurs factices : aucun secret réel n'entre en CI (doc 09 §6).                                    |
+
+Les secrets sont typés `SecretStr` : ils n'apparaissent ni dans `repr(settings)`, ni dans un
+journal. Les variables `NEXT_PUBLIC_*` du `.env` sont consommées par les applications Next.js et
+volontairement absentes de `Settings`.
+
+La configuration s'obtient par `get_settings()` et s'injecte par `Depends(get_settings)` ; elle
+n'est jamais importée comme singleton global depuis le domaine.
+
+Les quatre variables de marque — `PRODUCT_NAME`, `PUBLIC_DOMAIN`, `BOT_USER_AGENT` et
+`CONTACT_EMAIL` — externalisent ce qui sort vers l'extérieur (Q14, doc 14). « Karuta » reste un
+nom de code interne : le paquet Python, la base de développement, les services Docker et le
+préfixe `KAR-XX` ne sont pas concernés.
+
 ## Qualité du code
 
 Ruff (lint et format) et Mypy (typage strict) sont configurés dans `pyproject.toml`,
@@ -127,5 +159,6 @@ Architecture hexagonale : les dépendances ne pointent jamais vers l'extérieur.
 | `src/karuta/infrastructure/` | Implémentations techniques : base, cache, stockage, tâches.     |
 | `src/karuta/interfaces/`     | Routers FastAPI, schémas Pydantic, commandes.                   |
 | `src/karuta/workers/`        | Tâches TaskIQ.                                                  |
+| `src/karuta/config.py`       | Configuration typée, validée au démarrage.                      |
 | `migrations/`                | Migrations Alembic.                                             |
 | `tests/`                     | `unit/`, `integration/`, `e2e/`, `factories/`.                  |
