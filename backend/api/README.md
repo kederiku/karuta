@@ -123,3 +123,5 @@ Architecture hexagonale : les dépendances ne pointent jamais vers l'extérieur.
 | `src/karuta/workers/`        | Tâches TaskIQ.                                                  |
 | `migrations/`                | Migrations Alembic.                                             |
 | `tests/`                     | `unit/`, `integration/`, `e2e/`, `factories/`.                  |
+
+Ce fichier sert de témoin à la vérification du filtrage de CI Frontend (KAR-9).
