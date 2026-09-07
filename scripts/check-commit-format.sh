@@ -20,6 +20,14 @@ valides=(
   "chore(infra): met en place la ci (#16)"
   "chore(infra): met en place la ci"$'\n\n'"Refs KAR-10"
   "chore(db): partitionne price_history"$'\n\n'"Refs KAR-10"$'\n'"Refs ADR-0022"
+  # Message tel que Dependabot le produit, avec le préfixe qu'impose .github/dependabot.yml.
+  # Il passe sans aucune exception dans la configuration, pour trois raisons qui doivent le
+  # rester : le préfixe fournit un scope admis, body-max-line-length ne compte pas les lignes
+  # porteuses d'une URL — ce que sont toutes les lignes longues de Dependabot —, et le sujet est
+  # en minuscule, Dependabot le déduisant des messages récents du dépôt. Ce cas est ici pour que
+  # toute évolution qui romprait l'une des trois soit vue avant que les pull requests de mise à
+  # jour ne deviennent infusionnables, commit-lint étant un check requis.
+  "chore(infra): bump @commitlint/config-conventional from 21.2.2 to 21.3.0"$'\n\n'"Bumps [@commitlint/config-conventional](https://github.com/conventional-changelog/commitlint/tree/HEAD/@commitlint/config-conventional) from 21.2.2 to 21.3.0."$'\n\n'"---"$'\n'"updated-dependencies:"$'\n'"- dependency-name: @commitlint/config-conventional"$'\n'"  dependency-type: direct:development"$'\n'"..."$'\n\n'"Signed-off-by: dependabot[bot] <support@github.com>"
 )
 
 # Chaque entrée viole une règle, sauf la première, qui n'a ni type, ni scope, ni description.
@@ -30,6 +38,9 @@ invalides=(
   "feat(api): ajoute l'endpoint de recherche avec facettes."
   "ci(infra): met en place le workflow de commitlint"
   "chore: configure commitlint"
+  # Le scope que Dependabot poserait sans commit-message.prefix. Ce cas justifie ce réglage de
+  # .github/dependabot.yml : sans lui, chaque pull request de mise à jour serait refusée ici.
+  "chore(deps): bump @commitlint/config-conventional from 21.2.2 to 21.3.0"
 )
 
 code=0

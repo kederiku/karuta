@@ -67,6 +67,10 @@ lint:           ## Vérifie le style, le formatage, les types et le format des c
 # Le job commit-lint exécute ce même script : sans lui ici, une PR pouvait être verte en local
 # et rouge en CI, le faux vert que la parité du doc 19 §6 vise à fermer.
 	bash scripts/check-commit-format.sh
+# Volet parité de version seulement : Gitleaks n'est pas une dépendance du projet et manque donc
+# sur un poste fraîchement cloné, alors que la comparaison des deux fichiers, elle, ne demande
+# rien. La détection est éprouvée en CI, où le binaire est téléchargé (secrets-scan.yml).
+	bash scripts/check-secrets-scan.sh --versions-only
 
 format:         ## Reformate le code Python et JavaScript
 	$(UV_API) ruff format .

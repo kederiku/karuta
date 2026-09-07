@@ -1,0 +1,74 @@
+# Contrôle transverse du doc 09 §4 : un avis de sécurité paraît sans que le dépôt bouge, et vise
+# des dépendances transitives qu'aucun chemin ne désigne. Ce job ne porte donc aucune étape de
+# filtrage — ADR-0022 est satisfait par construction, comme pour commit-lint.
+name: Security Scan
+
+on:
+  pull_request:
+  push: { branches: [main] }
+
+permissions:
+  contents: read
+
+jobs:
+  # Nom fixé par le tableau « Contrôles transverses » du doc 09 §4, et destiné à devenir un check
+  # requis dans la protection de main : le renommer casse la protection sans avertissement.
+  #
+  # Ce tableau nomme trois volets ; ce job en couvre deux. Trivy suppose une image construite et
+  # publiée, ce qu'aucun ticket n'a encore posé — l'étage de production du Dockerfile arrive avec
+  # KAR-151 et la publication au registre avec KAR-152. Le volet images est donc porté par ces
+  # tickets, et non conditionné ici : une étape hashFiles() ne saurait ni construire l'image, ni
+  # décider ce qu'elle doit scanner. Le doc 09 §4 lit « pip-audit » là où ce job exécute
+  # « uv audit » : correction signalée dans la pull request.
+  security-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with: { persist-credentials: false }
+
+      # La version d'uv est épinglée, alors que ci-backend.yml laisse l'action installer la
+      # dernière publiée : « uv audit » s'annonce expérimental et prévient qu'il peut changer sans
+      # préavis. Un check requis dont la sémantique bougerait à chaque publication d'Astral, sans
+      # pull request ni diff, contredirait l'intention d'E19.
+      # Aucun marqueur TODO ici : le repassage en version flottante, le jour où « uv audit »
+      # sera stable, n'a pas de ticket, et le doc 20 §17 en exige un pour tout marqueur.
+      - uses: astral-sh/setup-uv@v10.0.1
+        with: { version: "0.12.10", enable-cache: true }
+
+      # --locked et non --frozen : --frozen auditerait uv.lock sans vérifier qu'il correspond à
+      # pyproject.toml, si bien qu'une pull request ajoutant une dépendance sans régénérer le
+      # verrou serait auditée sur l'état précédent, et verte. Aucun uv sync : l'audit lit le
+      # verrou, il n'a pas besoin de l'environnement.
+      # Aucun seuil de sévérité, ici comme côté npm : « uv audit » n'en propose pas, et une
+      # politique asymétrique rendrait la coche verte impossible à interpréter. Un avis sans
+      # correctif disponible se traite par un --ignore-until-fixed nominatif, justifié en
+      # commentaire, dans une pull request dédiée — jamais par --ignore-unfixable, qui éteint une
+      # catégorie entière sans laisser trace de ce qu'elle contenait.
+      - name: Vulnérabilités des dépendances Python — api
+        run: uv audit --locked
+        working-directory: backend/api
+
+      # TODO(KAR-59): l'étape s'active d'elle-même à la création du manifeste du projet Scrapy.
+      # Sans elle, la pile la plus exposée du projet — celle qui parle à l'Internet — resterait
+      # hors du périmètre audité sans que rien ne le signale (E20).
+      - name: Vulnérabilités des dépendances Python — scraping
+        if: hashFiles('backend/scraping/pyproject.toml') != ''
+        run: uv audit --locked
+        working-directory: backend/scraping
+
+      # pnpm lit pnpm-lock.yaml et non l'arbre installé : aucun pnpm install n'est nécessaire,
+      # vérifié sur un dépôt réduit au verrou et aux manifestes. L'action lit packageManager du
+      # package.json racine, seule source de vérité (E6).
+      - uses: pnpm/action-setup@v6.0.10
+
+      - uses: actions/setup-node@v7.0.0
+        with: { node-version: 24 }
+
+      # Sans --audit-level : le défaut « low » remonte tout, symétrique du volet Python.
+      # Sans --ignore-registry-errors non plus, que la documentation de pnpm recommande pourtant
+      # en CI : il rend le contrôle vert dès que le registre répond mal, c'est-à-dire exactement
+      # la forme de contournement permanent que proscrit E20. Une panne de registre est rare et
+      # visible ; elle se relance.
+      - name: Vulnérabilités des dépendances npm
+        run: pnpm audit

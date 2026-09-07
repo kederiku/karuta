@@ -1,0 +1,42 @@
+# Volet « mises à jour de dépendances » du doc 09 §9. Dependabot propose, il ne dispose pas : les
+# versions restent des décisions humaines (E6, E15, E19, ADR-0025, ADR-0028), et chaque pull
+# request se relit comme une autre. La détection des vulnérabilités, elle, n'est pas ici : elle est
+# dans security-scan.yml, qui échoue à chaque pull request sur un avis connu.
+version: 2
+
+updates:
+  # Les actions sont épinglées en version exacte (E19) : sans Dependabot, une action non maintenue
+  # devient une dette de sécurité dans la chaîne même qui décide de la fusion. C'est la seule
+  # source de proposition de montée admise — aucun agent n'en monte une de sa propre initiative.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    # Le scope « deps » que Dependabot pose par défaut n'est pas dans les huit de commitlint
+    # (doc 10 §1, E23), et le scope est obligatoire : sans ce préfixe, chaque pull request serait
+    # refusée par le check requis commit-lint. Ne pas y ajouter « include: scope », qui produirait
+    # « chore(infra)(deps): », invalide à son tour.
+    commit-message: { prefix: chore(infra) }
+
+  - package-ecosystem: uv
+    directory: /backend/api
+    schedule: { interval: weekly }
+    commit-message: { prefix: chore(infra) }
+
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    commit-message: { prefix: chore(infra) }
+    ignore:
+      # ESLint reste en ligne 9 : sous ESLint 10, eslint-plugin-import plante dans import/order,
+      # la règle même qu'impose le doc 10 §3 (ADR-0028). La dette est assumée et sans date de
+      # sortie ; une proposition hebdomadaire de la reprendre ne ferait que du bruit.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      # TypeScript reste en 6 : typescript-eslint 8.69.0 déclare typescript >=4.8.4 <6.1.0, et
+      # TypeScript 7 sortirait de la plage en désactivant silencieusement no-explicit-any
+      # (ADR-0028).
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+    # Node 24 et pnpm 11 ne sont pas listés ici : ils vivent dans « engines » et « packageManager »,
+    # que Dependabot ne met pas à jour. Une proposition qui les viserait contredirait ADR-0025 et
+    # serait à fermer.
