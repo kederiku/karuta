@@ -9,6 +9,7 @@ import karuta.config
 from karuta.config import (
     ConfigurationError,
     Environment,
+    LogLevel,
     Settings,
     _find_env_file,
     get_settings,
@@ -214,3 +215,24 @@ def test_settings_built_from_the_example_file_alone_are_complete(
 
     assert settings.environment is Environment.DEVELOPMENT
     assert settings.product_name == "Karuta"
+
+
+def test_get_settings_accepts_a_log_level_written_in_lowercase(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOG_LEVEL", "debug")
+
+    assert get_settings().log_level is LogLevel.DEBUG
+
+
+def test_get_settings_when_log_level_is_not_a_known_level_names_the_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LOG_LEVEL", "verbose")
+
+    with pytest.raises(ConfigurationError) as error:
+        get_settings()
+
+    assert "LOG_LEVEL" in str(error.value)
+    # Le message ne porte aucune valeur : la même fonction décrit aussi les secrets refusés.
+    assert "verbose" not in str(error.value)
