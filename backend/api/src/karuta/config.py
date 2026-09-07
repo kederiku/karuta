@@ -8,7 +8,7 @@ from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field, SecretStr, ValidationError
+from pydantic import Field, SecretStr, ValidationError, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -47,6 +47,16 @@ class Environment(StrEnum):
     PRODUCTION = "production"
 
 
+class LogLevel(StrEnum):
+    """Seuil du journal du processus, repris des niveaux de la bibliothèque standard."""
+
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
 class ConfigurationError(RuntimeError):
     """Configuration absente ou invalide, relevée au démarrage.
 
@@ -80,7 +90,7 @@ class Settings(BaseSettings):
 
     # Général
     environment: Environment
-    log_level: str = "INFO"
+    log_level: LogLevel = LogLevel.INFO
     secret_key: SecretStr
 
     # Base de données
@@ -127,6 +137,23 @@ class Settings(BaseSettings):
         "KarutaBot/1.0 (+https://karuta.example.com/bot; contact@karuta.example.com)"
     )
     contact_email: str = "contact@karuta.example.com"
+
+    @field_validator("log_level", mode="before")
+    @classmethod
+    def _normalise_log_level(cls, value: object) -> object:
+        """Accepte « info » comme « INFO ».
+
+        La casse est la coquille courante sur cette variable ; la refuser transformerait une
+        faute bénigne en refus de démarrage, alors que l'intention est sans ambiguïté. Une
+        valeur qui n'est pas un niveau reste refusée.
+
+        Args:
+            value: Valeur lue dans l'environnement.
+
+        Returns:
+            La valeur en majuscules si c'est une chaîne, inchangée sinon.
+        """
+        return value.upper() if isinstance(value, str) else value
 
 
 def _describe(error: ValidationError) -> str:

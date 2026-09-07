@@ -90,6 +90,39 @@ Les quatre variables de marque — `PRODUCT_NAME`, `PUBLIC_DOMAIN`, `BOT_USER_AG
 nom de code interne : le paquet Python, la base de développement, les services Docker et le
 préfixe `KAR-XX` ne sont pas concernés.
 
+## Journalisation
+
+`src/karuta/logging_config.py` configure structlog pour tout le processus, en un seul appel que
+`src/karuta/main.py` passe avant de construire l'application. Le rendu suit `ENVIRONMENT` :
+console lisible en développement, **une ligne JSON par évènement** en staging comme en
+production. Le seuil vient de `LOG_LEVEL`, contraint aux niveaux de la bibliothèque standard —
+la casse est normalisée, une valeur inconnue fait échouer le démarrage.
+
+Les évènements s'écrivent à la manière du doc 09 §7 : le nom en premier argument, le contexte en
+arguments nommés.
+
+```python
+logger.info("offer_matched", raw_offer_id=str(raw.id), score=score, duration_ms=elapsed)
+```
+
+`RequestContextMiddleware` (`src/karuta/interfaces/api/middleware.py`) lit l'en-tête
+`X-Request-ID`, ou en génère un, le lie au contexte structlog et le renvoie dans la réponse.
+Tout évènement émis pendant la requête le porte alors sans qu'aucun appelant ait à le
+transmettre, y compris les enregistrements de la bibliothèque standard, qui passent par la même
+chaîne. Une valeur entrante non conforme — vide, au-delà de 64 caractères, ou hors de
+`[A-Za-z0-9._-]` — est refusée et remplacée : elle atterrirait sinon telle quelle dans le
+journal. Chaque requête produit une ligne `http_request` portant méthode, chemin, statut et
+`duration_ms` ; le journal d'accès d'uvicorn est tu pour ne pas la doubler.
+
+`current_request_id()` donne l'identifiant de la requête en cours à du code qui n'a pas accès à
+la requête — les réponses d'erreur RFC 7807, notamment.
+
+Aucun secret n'atteint le journal : les valeurs `SecretStr` ne sortent jamais en clair, et un
+processeur masque la valeur de toute clé dont le nom contient `password`, `token`, `secret`,
+`api_key` ou `authorization`, à toute profondeur (doc 05 §10). Le masquage porte sur le **nom de
+la clé** : un secret interpolé dans une chaîne sous une clé anodine — une URL de connexion —
+resterait visible.
+
 ## Qualité du code
 
 Ruff (lint et format) et Mypy (typage strict) sont configurés dans `pyproject.toml`,
