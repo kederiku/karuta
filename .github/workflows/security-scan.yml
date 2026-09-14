@@ -60,7 +60,7 @@ jobs:
       # pnpm lit pnpm-lock.yaml et non l'arbre installé : aucun pnpm install n'est nécessaire,
       # vérifié sur un dépôt réduit au verrou et aux manifestes. L'action lit packageManager du
       # package.json racine, seule source de vérité (E6).
-      - uses: pnpm/action-setup@v6.0.10
+      - uses: pnpm/action-setup@v6.1.0
 
       - uses: actions/setup-node@v7.0.0
         with: { node-version: 24 }

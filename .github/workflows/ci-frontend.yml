@@ -42,7 +42,7 @@ jobs:
 
       # Aucune version de pnpm n'est passée : l'action lit packageManager du package.json
       # racine, seule source de vérité, comme corepack dans le Dockerfile frontend (E6).
-      - uses: pnpm/action-setup@v6.0.10
+      - uses: pnpm/action-setup@v6.1.0
 
       - uses: actions/setup-node@v7.0.0
         with: { node-version: 24, cache: pnpm }
