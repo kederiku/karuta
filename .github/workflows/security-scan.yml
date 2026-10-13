@@ -62,7 +62,7 @@ jobs:
       # package.json racine, seule source de vérité (E6).
       - uses: pnpm/action-setup@v6.0.10
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with: { node-version: 24 }
 
       # Sans --audit-level : le défaut « low » remonte tout, symétrique du volet Python.
